@@ -8,19 +8,15 @@ typedef struct {
   ListItem list;
   ResourceType type;
   int duration;
+  int paused;
+  int n_iteration;
 } ProcessEvent;
-
-typedef struct {
-  ProcessEvent proc_ev;
-  int paused; //added by me
-} CPUProcessEvent;
 
 // fake process
 typedef struct {
   ListItem list;
   int pid; // assigned by us
   int arrival_time;
-  int prev_q; //added by me
   ListHead events;
 } FakeProcess;
 

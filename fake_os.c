@@ -47,6 +47,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   new_pcb->list.next=new_pcb->list.prev=0;
   new_pcb->pid=p->pid;
   new_pcb->events=p->events;
+  new_pcb->prev_q=0;
 
   assert(new_pcb->events.first && "process without events");
 
@@ -135,14 +136,22 @@ void FakeOS_simStep(FakeOS* os){
   // if last event, destroy running
   for(int i=0;i<os->n_cpus;i++){
     FakePCB* running=os->running[i];
+    //printf("CPU[%d]:%p\n",i,running);
+    int* current_time=os->current_time;
     printf("\trunning pid: %d\n", running?running->pid:-1);
     if (running) {
       ProcessEvent* e=(ProcessEvent*) running->events.first;
       assert(e->type==CPU);
       e->duration--;
+      current_time[i]=current_time[i]+1;
       printf("\t\tremaining time:%d\n",e->duration);
       if (e->duration==0){
         printf("\t\tend burst\n");
+        if(e->n_iteration==0){ // change the quantum of next process event
+          //os->schedule_fn=modifyPrevQuantum;
+          (*os->schedule_fn)(os, os->schedule_args,i);
+        }
+        current_time[i]=0;
         List_popFront(&running->events);
         free(e);
         if (! running->events.first) {
@@ -150,15 +159,19 @@ void FakeOS_simStep(FakeOS* os){
           free(running); // kill process
         } else {
           e=(ProcessEvent*) running->events.first;
-          switch (e->type){
-          case CPU:
+          if(e->type==CPU){
             printf("\t\tmove to ready\n");
             List_pushBack(&os->ready, (ListItem*) running);
-            break;
-          case IO:
+            //break;
+          }
+          else if(e->type==IO){
             printf("\t\tmove to waiting\n");
             List_pushBack(&os->waiting, (ListItem*) running);
-            break;
+            //break;
+          }
+          else{
+            printf("Event type not defined\n");
+            exit(EXIT_FAILURE);
           }
         }
         os->running[i] = 0;
@@ -167,6 +180,7 @@ void FakeOS_simStep(FakeOS* os){
 
 
     // call schedule, if defined
+    //os->schedule_fn=schedSJF;
     if (os->schedule_fn && ! os->running[i]){
       (*os->schedule_fn)(os, os->schedule_args,i); 
     }

@@ -32,12 +32,12 @@ int FakeProcess_load(FakeProcess* p, const char* filename) {
     num_tokens=sscanf(buffer, "CPU_BURST %d", &duration);
     if (num_tokens==1){
       // we create a new event of type cpu burst
-      CPUProcessEvent* e=(CPUProcessEvent*) malloc(sizeof(CPUProcessEvent));
-      ProcessEvent* pe=&(e->proc_ev);    //modified
-      pe->list.prev=pe->list.next=0;
-      pe->type=CPU;
-      pe->duration=duration;
-      e->paused=0;                       //end
+      ProcessEvent* e=(ProcessEvent*) malloc(sizeof(ProcessEvent));
+      e->paused=0;
+      e->list.prev=e->list.next=0;
+      e->type=CPU;
+      e->duration=duration;
+      e->n_iteration=0;
       List_pushBack(&p->events, (ListItem*)e);
       ++num_events;
       goto next_round;
