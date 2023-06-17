@@ -189,6 +189,7 @@ void FakeOS_simStep(FakeOS* os){
     // put the first in ready to run
     if (! os->running[i] && os->ready.first) {
       os->running[i]=(FakePCB*) List_popFront(&os->ready);
+      printf("\t\tSCHEDULER FAILED\n");
     }
   } //modified by me
 

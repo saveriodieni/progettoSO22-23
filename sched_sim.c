@@ -40,7 +40,16 @@ void schedSJF(FakeOS* os,void* args_,int pos){
   SchedRRArgs* args=(SchedRRArgs*)args_;
   if (! os->ready.first)
     return;
-  FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);  // devo predere il più piccolo
+  // devo predere il più piccolo
+  FakePCB* pcb=(FakePCB*)os->ready.first;
+  ListItem* aux=(os->ready.first)->next;
+  while(aux){
+    if(((FakePCB*)aux)->prev_q<pcb->prev_q){
+      pcb=(FakePCB*)aux;
+    }
+    aux=aux->next;
+  }
+  List_detach(&os->ready,(ListItem*)pcb);
   os->running[pos]=pcb;
   
   assert(pcb->events.first);
@@ -94,6 +103,10 @@ void schedRR(FakeOS* os, void* args_,int pos){
 };
 
 int main(int argc, char** argv) {
+  if(argc<5){
+    printf("usage ./sched_sim <n_cpus> <quantum> <a> <processes>\n");
+    exit(EXIT_FAILURE);
+  }
   FakeOS_init(&os,atoi(argv[1]));
   SchedSJFArgs ssjf_args;
   ssjf_args.quantum=atoi(argv[2]);
@@ -101,11 +114,15 @@ int main(int argc, char** argv) {
     printf("ERROR: invalid value for quantum");
     exit(EXIT_FAILURE);
   }
-  ssjf_args.a=0.5;
+  ssjf_args.a=atof(argv[3]);
+  if(ssjf_args.a<0 || ssjf_args.a>1){
+    printf("ERROR: invalid value for a");
+    exit(EXIT_FAILURE);
+  }
   os.schedule_args=&ssjf_args;
   os.schedule_fn=modifyPrevQuantum;
   
-  for (int i=3; i<argc; ++i){   //modified by me
+  for (int i=4; i<argc; ++i){   //modified by me
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d\n",
