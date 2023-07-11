@@ -201,3 +201,24 @@ void FakeOS_destroy(FakeOS* os) {
   free(os->running);
   free(os->current_time);
 }
+
+
+void FakeOS_printReadyList(struct FakeOS* os){
+  if(os!=NULL){
+    printf("\t\tReady List\n");
+    ListHead ready=os->ready;
+    if(ready.size<=0){
+      printf("\t\tLista vuota");
+      return;
+    }
+    else{
+      printf("\t\t[\n");
+      ListItem* aux=os->ready.first;
+      while(aux){
+        printf("\t\t\tpid : %d , prev_q : %f\n",((FakePCB*)aux)->pid,((FakePCB*)aux)->prev_q);
+        aux=aux->next;
+      }
+      printf("\t\t]\n");
+    }
+  }
+}

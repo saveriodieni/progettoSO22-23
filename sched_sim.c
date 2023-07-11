@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include "fake_os.h"
 
 FakeOS os;
+int verbose=0;
 
 void modifyPrevQuantum(FakeOS* os,void* args_,int pos);
 void schedSJF(FakeOS* os,void* args_,int pos);
@@ -49,8 +51,15 @@ void schedSJF(FakeOS* os,void* args_,int pos){
     }
     aux=aux->next;
   }
+
+  // stampa la lista dei processi con il loro prev_q
+
+  if(verbose) FakeOS_printReadyList(os);
+
   List_detach(&os->ready,(ListItem*)pcb);
   os->running[pos]=pcb;
+
+  if(verbose) printf("\t\tprocesso scelto : %d\n",pcb->pid);
   
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
@@ -104,42 +113,85 @@ void schedRR(FakeOS* os, void* args_,int pos){
 
 int main(int argc, char** argv) {
   if(argc<5){
-    printf("usage ./sched_sim <n_cpus> <quantum> <a> <processes>\n");
+    printf("usage ./sched_sim verbose{optional} <n_cpus> <quantum> <a> <processes>\n");
     exit(EXIT_FAILURE);
   }
-  FakeOS_init(&os,atoi(argv[1]));
-  SchedSJFArgs ssjf_args;
-  ssjf_args.quantum=atoi(argv[2]);
-  if(ssjf_args.quantum<1){
-    printf("ERROR: invalid value for quantum");
-    exit(EXIT_FAILURE);
+
+  if(strcmp(argv[1],"verbose")==0){
+    verbose=1;
   }
-  ssjf_args.a=atof(argv[3]);
-  if(ssjf_args.a<0 || ssjf_args.a>1){
-    printf("ERROR: invalid value for a");
-    exit(EXIT_FAILURE);
-  }
-  os.schedule_args=&ssjf_args;
-  os.schedule_fn=modifyPrevQuantum;
-  
-  for (int i=4; i<argc; ++i){   //modified by me
-    FakeProcess new_process;
-    int num_events=FakeProcess_load(&new_process, argv[i]);
-    printf("loading [%s], pid: %d, events:%d\n",
-           argv[i], new_process.pid, num_events);
-    if (num_events) {
-      FakeProcess* new_process_ptr=(FakeProcess*)malloc(sizeof(FakeProcess));
-      *new_process_ptr=new_process;
-      ListItem* aux=(ListItem*)new_process_ptr->events.first;
-      int size=new_process_ptr->events.size;
-      for(int i=0;i<size;i++){
-        ProcessEvent* pe=(ProcessEvent*) aux;
-        if(pe->type==CPU) pe->paused=(pe->duration-1)/ssjf_args.quantum;
-        aux=aux->next;
+
+  if(verbose){
+    FakeOS_init(&os,atoi(argv[2]));
+    SchedSJFArgs ssjf_args;
+    ssjf_args.quantum=atoi(argv[3]);
+    if(ssjf_args.quantum<1){
+      printf("ERROR: invalid value for quantum");
+      exit(EXIT_FAILURE);
+    }
+    ssjf_args.a=atof(argv[4]);
+    if(ssjf_args.a<0 || ssjf_args.a>1){
+      printf("ERROR: invalid value for a");
+      exit(EXIT_FAILURE);
+    }
+    os.schedule_args=&ssjf_args;
+    os.schedule_fn=modifyPrevQuantum;
+    
+    for (int i=5; i<argc; ++i){   //modified by me
+      FakeProcess new_process;
+      int num_events=FakeProcess_load(&new_process, argv[i]);
+      printf("loading [%s], pid: %d, events:%d\n",
+            argv[i], new_process.pid, num_events);
+      if (num_events) {
+        FakeProcess* new_process_ptr=(FakeProcess*)malloc(sizeof(FakeProcess));
+        *new_process_ptr=new_process;
+        ListItem* aux=(ListItem*)new_process_ptr->events.first;
+        int size=new_process_ptr->events.size;
+        for(int i=0;i<size;i++){
+          ProcessEvent* pe=(ProcessEvent*) aux;
+          if(pe->type==CPU) pe->paused=(pe->duration-1)/ssjf_args.quantum;
+          aux=aux->next;
+        }
+        List_pushBack(&os.processes, (ListItem*)new_process_ptr);
       }
-      List_pushBack(&os.processes, (ListItem*)new_process_ptr);
     }
   }
+  else{
+    FakeOS_init(&os,atoi(argv[1]));
+    SchedSJFArgs ssjf_args;
+    ssjf_args.quantum=atoi(argv[2]);
+    if(ssjf_args.quantum<1){
+      printf("ERROR: invalid value for quantum");
+      exit(EXIT_FAILURE);
+    }
+    ssjf_args.a=atof(argv[3]);
+    if(ssjf_args.a<0 || ssjf_args.a>1){
+      printf("ERROR: invalid value for a");
+      exit(EXIT_FAILURE);
+    }
+    os.schedule_args=&ssjf_args;
+    os.schedule_fn=modifyPrevQuantum;
+    
+    for (int i=4; i<argc; ++i){   //modified by me
+      FakeProcess new_process;
+      int num_events=FakeProcess_load(&new_process, argv[i]);
+      printf("loading [%s], pid: %d, events:%d\n",
+            argv[i], new_process.pid, num_events);
+      if (num_events) {
+        FakeProcess* new_process_ptr=(FakeProcess*)malloc(sizeof(FakeProcess));
+        *new_process_ptr=new_process;
+        ListItem* aux=(ListItem*)new_process_ptr->events.first;
+        int size=new_process_ptr->events.size;
+        for(int i=0;i<size;i++){
+          ProcessEvent* pe=(ProcessEvent*) aux;
+          if(pe->type==CPU) pe->paused=(pe->duration-1)/ssjf_args.quantum;
+          aux=aux->next;
+        }
+        List_pushBack(&os.processes, (ListItem*)new_process_ptr);
+      }
+    }
+  }
+
   printf("num processes in queue %d\n", os.processes.size);
   //for(int i=0;i<os.n_cpus;i++) schedSJF(&os,&os.schedule_args,i);
   while(isRunning(&os)
