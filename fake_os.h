@@ -7,7 +7,7 @@ typedef struct {
   ListItem list;
   int pid;
   ListHead events;
-  float prev_q; //added by me
+  float prev_q;
 } FakePCB;
 
 struct FakeOS;
@@ -21,7 +21,7 @@ typedef struct FakeOS{
   ScheduleFn schedule_fn;
   void* schedule_args;
 
-  int* current_time;       //added by me
+  int* current_time;      
   int n_cpus;
 
   ListHead processes;

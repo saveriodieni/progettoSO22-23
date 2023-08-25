@@ -136,7 +136,7 @@ void FakeOS_simStep(FakeOS* os){
   // if last event, destroy running
   for(int i=0;i<os->n_cpus;i++){
     FakePCB* running=os->running[i];
-    //printf("CPU[%d]:%p\n",i,running);
+    
     int* current_time=os->current_time;
     printf("\trunning pid: %d\n", running?running->pid:-1);
     if (running) {
@@ -148,7 +148,7 @@ void FakeOS_simStep(FakeOS* os){
       if (e->duration==0){
         printf("\t\tend burst\n");
         if(e->n_iteration==0){ // change the quantum of next process event
-          //os->schedule_fn=modifyPrevQuantum;
+
           (*os->schedule_fn)(os, os->schedule_args,i);
         }
         current_time[i]=0;
@@ -180,7 +180,7 @@ void FakeOS_simStep(FakeOS* os){
 
 
     // call schedule, if defined
-    //os->schedule_fn=schedSJF;
+
     if (os->schedule_fn && ! os->running[i]){
       (*os->schedule_fn)(os, os->schedule_args,i); 
     }
@@ -191,7 +191,7 @@ void FakeOS_simStep(FakeOS* os){
       os->running[i]=(FakePCB*) List_popFront(&os->ready);
       printf("\t\tSCHEDULER FAILED\n");
     }
-  } //modified by me
+  }
 
   ++os->timer;
 
