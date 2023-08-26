@@ -70,8 +70,9 @@ int FakeProcess_save(const FakeProcess* p, const char* filename){
   if (! f)
     return -1;
   fprintf(f, "PROCESS %d %d\n", p->pid, p->arrival_time);
+  ListItem* prev;  
   ListItem* aux=p->events.first;
-  int num_events;
+  int num_events=0;
   while(aux) {
     ProcessEvent* e=(ProcessEvent*) aux;
     switch(e->type){
@@ -85,7 +86,9 @@ int FakeProcess_save(const FakeProcess* p, const char* filename){
       break;
     default:;
     }
+    prev=aux;
     aux=aux->next;
+    free(prev);
   }
   fclose(f);
   return num_events;
